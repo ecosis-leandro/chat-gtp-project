@@ -1,0 +1,12 @@
+{
+  "name": "url-frame-pdf",
+  "version": "1.0.0",
+  "description": "Aplicativo Electron para abrir uma URL em um frame e salvar em PDF",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}
