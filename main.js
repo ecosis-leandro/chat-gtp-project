@@ -1,7 +1,52 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, session } = require('electron');
 const path = require('path');
 
 let mainWindow;
+let bypassFrameProtectionEnabled = false;
+
+function removeFrameAncestorsFromCsp(cspHeaderValue) {
+  return cspHeaderValue
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter((directive) => !directive.toLowerCase().startsWith('frame-ancestors'))
+    .join('; ');
+}
+
+function enableFrameBypass() {
+  if (enableFrameBypass.isRegistered) return;
+
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    if (!bypassFrameProtectionEnabled) {
+      callback({ responseHeaders: details.responseHeaders });
+      return;
+    }
+
+    const headers = { ...details.responseHeaders };
+
+    delete headers['X-Frame-Options'];
+    delete headers['x-frame-options'];
+
+    const cspKey = Object.keys(headers).find(
+      (key) => key.toLowerCase() === 'content-security-policy'
+    );
+
+    if (cspKey) {
+      headers[cspKey] = headers[cspKey]
+        .map((value) => removeFrameAncestorsFromCsp(value))
+        .filter((value) => value.trim().length > 0);
+
+      if (headers[cspKey].length === 0) {
+        delete headers[cspKey];
+      }
+    }
+
+    callback({ responseHeaders: headers });
+  });
+
+  enableFrameBypass.isRegistered = true;
+}
+
+enableFrameBypass.isRegistered = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -17,6 +62,11 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 }
+
+ipcMain.handle('set-frame-bypass-enabled', (_, enabled) => {
+  bypassFrameProtectionEnabled = Boolean(enabled);
+  return bypassFrameProtectionEnabled;
+});
 
 ipcMain.handle('save-page-as-pdf', async (_, url) => {
   const hiddenWindow = new BrowserWindow({ show: false });
@@ -50,7 +100,10 @@ ipcMain.handle('save-page-as-pdf', async (_, url) => {
   }
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  enableFrameBypass();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

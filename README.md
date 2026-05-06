@@ -4,6 +4,7 @@ Este projeto usa **Electron** para permitir:
 
 1. Abrir uma URL em um frame (`iframe`) na interface.
 2. Salvar a página informada em **PDF** com um botão.
+3. Ativar opcionalmente um bypass para cabeçalhos `X-Frame-Options` e diretiva `frame-ancestors` da CSP.
 
 ## Requisitos
 
@@ -19,11 +20,13 @@ npm start
 ## Como usar
 
 1. Digite a URL (ex: `https://example.com`).
-2. Clique em **Abrir URL** para visualizar no frame.
-3. Clique em **Salvar como PDF**.
-4. Escolha o local do arquivo `.pdf`.
+2. (Opcional) Ative **Bypass X-Frame-Options/CSP**.
+3. Clique em **Abrir URL** para visualizar no frame.
+4. Clique em **Salvar como PDF**.
+5. Escolha o local do arquivo `.pdf`.
 
-## Observações
+## Observações importantes
 
-- Algumas páginas podem bloquear exibição em `iframe` por políticas de segurança (`X-Frame-Options` / CSP).
-- Mesmo nesses casos, a função de salvar PDF tenta carregar a URL em uma janela oculta para gerar o arquivo.
+- O bypass remove cabeçalhos de proteção de frame nas respostas HTTP da sessão padrão do Electron.
+- Esse recurso pode reduzir segurança e deve ser usado apenas em ambiente controlado/interno.
+- Dependendo da implementação do site, ainda podem existir limitações adicionais para renderização no frame.
